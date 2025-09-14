@@ -1,1 +1,3 @@
 Hello everyone! Peace Man, Peace Maker, and Threadstep — all of which are the same person — has agreed to open-source the release of Nocturnal FF2, an open-source FF2 script based on ViseHub-V2 that will continue to receive consistent updates. You are free to create issues and contribute to the code.
+
+Credits: threadstep/peace man/NG
