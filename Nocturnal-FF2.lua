@@ -1488,7 +1488,7 @@ LocalPlayer.PlayerGui.ChildAdded:Connect(function(Child)
     end
 end)
 
---[[UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
 	local Character = LocalPlayer.Character
 	if GameProcessed or (Input.KeyCode ~= Enum.KeyCode.Q) or not Character or not Nocturnal.QBAimbot.Enabled then
 		return
@@ -1580,124 +1580,7 @@ end)
 	end
 
 	ThrowFootball(Football, StartPosition, StartPosition + ThrowingDirection * 10000, Power)
-end)--]]
-
-local Namecall
-Namecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-    local Method = getnamecallmethod()
-    local Arguments = { ... }
-
-    if not checkcaller() and (Method == "fireServer") and (Arguments[1] == "Clicked") then
-        local Character = LocalPlayer.Character
-
-        local Football = Character.FindFirstChildOfClass(Character, "Tool")
-        if not Football then return end
-
-        local ThrowType
-
-        local StartPosition = Character.WaitForChild(Character, "Head").Position
-        local ThrowType = GetThrowType(ClosestPlayer)
-
-        if not ClosestPlayer or not ClosestPlayer.IsA(ClosestPlayer, "Player") then
-            return
-        end
-
-        local ReceiverRoute = CalculateRouteOfPlayer(ClosestPlayer)
-        local N = (ReceiverRoute == "Straight") and 4.3 or 5.5
-
-        local Initial = math.clamp(math.round(GetPower(HorizontalRangeOfProjectile(ClosestPlayer), 28)), 0, 95) + N
-        local Angle
-        if ThrowType == "Fade" then
-            Angle = 85
-        elseif ThrowType == "Bullet" then
-            Angle = BulletAngle
-        else
-            Angle = ThrowAngle
-        end
-
-        if Nocturnal.QBAimbot.HighestPowerMode then
-            Initial = math.clamp(GetPower(HorizontalRangeOfProjectile(ClosestPlayer), 28), 85, 95)
-        else
-            if Nocturnal.QBAimbot.AutoPower then
-                Initial = math.clamp(math.round(GetPower(HorizontalRangeOfProjectile(ClosestPlayer), 28)), 0, 95) + N
-            else
-                Initial = NormalPower
-            end
-        end
-
-        if ThrowType == "Bullet" then
-            Initial = 95
-        end
-
-        if ThrowType == "Fade" then
-            Initial = 65
-        end
-
-        local ToLaunchAngle
-        if Nocturnal.QBAimbot.HighestPowerMode then
-            if Nocturnal.QBAimbot.AutoAngle then
-                ToLaunchAngle = CalculateHighSpeedLowAngle(28, Initial)
-            else
-                ToLaunchAngle = math.rad(Angle)
-            end
-        else
-            if Nocturnal.QBAimbot.AutoAngle then
-                if ThrowType == "Fade" then
-                    ToLaunchAngle = math.rad(85)
-                elseif ThrowType == "Bullet" then
-                    ToLaunchAngle = math.clamp(CalculateLaunchAngleBullet(28, Initial), 0, 1)
-                else
-                    ToLaunchAngle = math.clamp(CalculateLaunchAngle(28, Initial), 0, 2.61799388)
-                end
-            else
-                ToLaunchAngle = math.rad(Angle)
-            end
-        end
-
-        local TimeOfFlight = GetTimeOfFlightProjectile(Initial, ToLaunchAngle, 28)
-        local EndPosition
-
-        if IsBot(ClosestPlayer.Name) then
-            EndPosition = BotEstimatedVel(TimeOfFlight, ClosestPlayer)
-        else
-            EndPosition = GetReceiverTargetPosition(TimeOfFlight, ClosestPlayer)
-        end
-
-        local Velocity, DirectionToThrow, Power = VelocityNeededToReachPosition(ToLaunchAngle, StartPosition, EndPosition, Vector3.new(0, -28, 0), TimeOfFlight)
-
-        if AutoPower then
-            if ThrowType == "Fade" then
-                Power = 65
-            elseif ThrowType == "Bullet" then
-                Power = 95
-            end
-        else
-            Power = NormalPower
-        end
-
-        if (game.PlaceId == 8204899140) then
-            local NewArguments = {
-                [1] = "Clicked",
-                [2] = StartPosition,
-                [3] = StartPosition + ThrowingDirection * 10000,
-                [4] = 1,
-                [5] = Power
-            }
-
-            return self.fireServer(self, unpack(NewArguments)))
-        else
-            local NewArguments = {
-                [1] = "Clicked",
-                [2] = StartPosition,
-                [3] = StartPosition + ThrowingDirection * 10000,
-                [4] = Power
-            }
-
-            return self.fireServer(self, unpack(NewArguments)))
-        end
-    end
-    return Namecall(self, ...)
-end))
+end)
 
 RunService.Heartbeat:Connect(function()
     if Nocturnal.QBAimbot.Enabled then
