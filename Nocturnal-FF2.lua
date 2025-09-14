@@ -1684,7 +1684,7 @@ Namecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
                 [5] = Power
             }
 
-            return Namecall(self, unpack(NewArguments))
+            return self.fireServer(self, unpack(NewArguments)))
         else
             local NewArguments = {
                 [1] = "Clicked",
@@ -1693,7 +1693,7 @@ Namecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
                 [4] = Power
             }
 
-            return Namecall(self, unpack(NewArguments))
+            return self.fireServer(self, unpack(NewArguments)))
         end
     end
     return Namecall(self, ...)
