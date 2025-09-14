@@ -1075,51 +1075,6 @@ local function ThrowFootball(Football, StartPosition, Direction, Power)
 	FakeRemoteEvent:Destroy()
 end
 
-
---[[local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-
-local BallCarrier = ReplicatedStorage.Values.Carrier.Value
-local LocalPlayer = Players.LocalPlayer
-local charplr = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local hrp2 = charplr:FindFirstChild("HumanoidRootPart")
-local hum2 = charplr:FindFirstChild("Humanoid")
-local aRushOn = Nocturnal.Automatics.AutoRush
-local agDist = 20
-LocalPlayer.CharacterAdded:Connect(function(character)
-    charplr = character
-end)
-
-local function doGuarding()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player == BallCarrier and BallCarrier ~= nil then
-            local car = player.Character
-            if car and car:FindFirstChild("Football") then
-                local hrp = car:FindFirstChild("HumanoidRootPart")
-                local hum = car:FindFirstChild("Humanoid")
-                if hrp and hrp2 and hum and hum2 then
-                    local WS = 20
-                    local distance = (hrp.Position - hrp2.Position).magnitude
-                    local TimeToGet = distance / WS
-                    if distance <= agDis then
-                        local equation = hrp.Position + (hum.MoveDirection * TimeToGet * WS)
-                        hum2:MoveTo(equation)
-                    end
-                end
-            end
-        end
-    end
-end
-
-task.spawn(function()
-    while task.wait() do
-        if aRushOn then
-            doGuarding()
-        end
-    end
-end)--]]
-
-
 local function GetBallCarrier()
     for Index, Player in next, Players:GetPlayers() do
         if Player and Player.Character and Player.Team ~= LocalPlayer.Team then
@@ -1131,8 +1086,6 @@ local function GetBallCarrier()
         end
     end
 end
-
-
 
 local function CharacterHasFootball()
     if Character:FindFirstChild("Football") then
@@ -1195,17 +1148,24 @@ Threads.AutoRushQB = task.spawn(function()
         end
 
         local BallCarrier = GetBallCarrier()
+        if BallCarrier then
+            local RootPart = BallCarrier:FindFirstChild("HumanoidRootPart")
+            if RootPart then
+                local Delay = tonumber(Nocturnal.Automatics.AutoRushDelay) or 0.1
+                task.wait(Delay)
 
-        if BallCarrier and BallCarrier:FindFirstChild("HumanoidRootPart") then
-            local Delay = tonumber(Nocturnal.Automatics.AutoRushDelay) or 0.1
+                if Humanoid and RootPart then
+                    local Carrier = (game.PlaceId ~= 8206123457)
+                        and ReplicatedStorage.Flags:FindFirstChild("Carrier")
+                        and ReplicatedStorage.Flags.Carrier.Value
 
-            task.wait(Delay)
-
-            if Humanoid and BallCarrier:FindFirstChild("HumanoidRootPart") then
-                local Carrier = not game.PlaceId == 8206123457 and ReplicatedStorage.Flags.Carrier.Value
-
-                if Carrier and Carrier.Team ~= LocalPlayer.Team then
-                    Humanoid:MoveTo(Carrier.Character.Torso.Position)
+                    if Carrier 
+                        and Carrier.Character
+                        and Carrier.Team ~= LocalPlayer.Team
+                        and Carrier.Character:FindFirstChild("Torso") then
+                        
+                        Humanoid:MoveTo(Carrier.Character.Torso.Position)
+                    end
                 end
             end
         end
@@ -1244,10 +1204,9 @@ Threads.PullVector = task.spawn(function()
         
         if Football and Nocturnal.Catching.PullVector then
             local Distance = (HumanoidRootPart.Position - Football.Position).Magnitude
-            local Direction = (HumanoidRootPart.Position - Football.Position).Unit
 
-            if Distance <= Nocturnal.Catching.PullVectorRadius then
-                HumanoidRootPart.Velocity = Direction * math.min((Nocturnal.Catching.PullVectorSpeed * 25), Distance)
+            if Distance <= (Nocturnal.Catching.PullVectorRadius or 50) then
+                HumanoidRootPart.CFrame = CFrame.new(Football.Position)
             end
         end
     end
@@ -1601,7 +1560,7 @@ RunService.Heartbeat:Connect(function()
         local Head = Character:FindFirstChild("Head")
         if not Head then return end
 
-        local Football = Character:FindFirstChild("Football")
+        local Football = Character:FindFirstChild("Football")   
         if not Football then return end
 
         local ReceiverRoute = CalculateRouteOfPlayer(ClosestPlayer)
@@ -1675,15 +1634,12 @@ RunService.Heartbeat:Connect(function()
                 CreateBillboard("Power: " .. tostring(Power), StartPosition)
                 CreateBillboard("Angle: " .. tostring(math.deg(LaunchAngle)), StartPosition + Vector3.new(0, 2, 0))
                 CreateBillboard("Target", TargetPosition)
-                -- > CreateBillboard("ThrowType: " .. ThrowType, StartPosition + Vector3.new(0, 4, 0))
             end
         end
     end
 end)
 
 task.wait()
-
--- // AC Bypass Section
 
 -- // Create six main tabs
 local CatchingTab = Window:AddTab("Catching", "user")
