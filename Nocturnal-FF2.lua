@@ -204,6 +204,7 @@ local HandshakeIntegers = {}
 
 -- // AC Bypass (not my bypass, this is my friends bypass temporarily until I get on tommorrow)
 if game.PlaceId == 8204899140 then
+	local Hooks = {}
 	local runService = game:GetService("RunService")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Handshake = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CharacterSoundEvent")
