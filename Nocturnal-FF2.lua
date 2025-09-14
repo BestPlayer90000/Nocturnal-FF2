@@ -2134,6 +2134,18 @@ QBGB:AddSlider("CustomLead", {
     Min = 0, Max = 100, Rounding = 0,
     Callback = function(Value) Nocturnal.QBAimbot.CustomLead = Value end
 })
+
+-- // Misc Groupbox
+local MiscGroupbox = MiscTab:AddLeftGroupbox("Menu Keybind", "wrench")
+
+MiscGroupbox:AddDivider()
+MiscGroupbox:AddLabel("Menu Bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+
+MiscGroupbox:AddButton("Unload", function()
+    Library:Unload()
+end)
+
+-- // Set the library toggle keybind
 Library.ToggleKeybind = Options.MenuKeybind
 
 -- // Setup Managers
