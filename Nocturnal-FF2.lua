@@ -341,6 +341,13 @@ local function GetClosestFootball()
     return ClosestFootball
 end
 
+local function GetFinishLine()
+    local Success, Error = pcall(function()
+        local LockerRoomA = Workspace:WaitForChild("Models", 5):WaitForChild("LockerRoomA", 5)
+        return LockerRoomA:WaitForChild("FinishLine", 5)
+    end)
+end
+
 local function IsBot(Name)
 	return string.find(Name, "bot 1") or string.find(Name, "bot 3")
 end
@@ -1391,8 +1398,7 @@ if not game.PlaceId == 8206123457 then
 end
 
 Threads.AngleEnhancer = task.spawn(function()
-    local AngleTick = os.clock()
-    local OldLookVector = Vector3.zero
+    local AngleTick = 0
     local ShiftLockEnabled = false
     local LastEnabled = false
 
@@ -1402,39 +1408,35 @@ Threads.AngleEnhancer = task.spawn(function()
 
     Humanoid.Jumping:Connect(function()
         if Humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then return end
-        if os.clock() - AngleTick > 0.2 then return end
+        if (os.clock() - AngleTick) > 0.2 then return end
         if not Nocturnal.Player.AngleEnhancer then return end
-        task.wait(0.05)
 
-        HumanoidRootPart.AssemblyLinearVelocity += Vector3.new(0, Nocturnal.Player.AngleEnhancerValue - 50, 0)
+        HumanoidRootPart.AssemblyLinearVelocity += Vector3.new(
+            0,
+            math.max(0, Nocturnal.Player.AngleEnhancerValue - 50),
+            0
+        )
     end)
 
-    while true do
-        task.wait()
-
+    while task.wait() do
         local Character = LocalPlayer.Character
         if not Character then continue end
 
-        local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
-        if not HumanoidRootPart then continue end
-
-        local Humanoid = Character:FindFirstChild("Humanoid")
-        if not Humanoid then continue end
-
-        local LookVector = HumanoidRootPart.CFrame.LookVector
-        local Difference = (OldLookVector - LookVector).Magnitude
+        local HRP = Character:FindFirstChild("HumanoidRootPart")
+        local Hum = Character:FindFirstChild("Humanoid")
+        if not HRP or not Hum then continue end
 
         if not ShiftLockEnabled and LastEnabled then
             AngleTick = os.clock()
         end
-        
-        if (os.clock() - AngleTick < 0.2) and Nocturnal.Player.AngleEnhancer then
-            Humanoid.JumpPower = (Nocturnal.Player.JumpPower and Nocturnal.Player.JP or 50) + (Nocturnal.Player.AngleEnhancerValue - 50)
-        elseif not Nocturnal.Player.AngleEnhancer then
-            Humanoid.JumpPower = (Nocturnal.Player.JumpPower and Nocturnal.Player.JP or 50)
+
+        if Nocturnal.Player.AngleEnhancer and (os.clock() - AngleTick) < 0.2 then
+            Hum.JumpPower = (Nocturnal.Player.JumpPower and Nocturnal.Player.JP or 50)
+                + math.max(0, Nocturnal.Player.AngleEnhancerValue - 50)
+        else
+            Hum.JumpPower = (Nocturnal.Player.JumpPower and Nocturnal.Player.JP or 50)
         end
 
-        OldLookVector = LookVector
         LastEnabled = ShiftLockEnabled
     end
 end)
@@ -1474,12 +1476,18 @@ Threads.AutoQB = task.spawn(function()
     end
 end)
 
-local FinishLine = not game.PlaceId == 8206123457 and Workspace.Models.LockerRoomA.FinishLine or Instance.new('Part')
+Threads.AutoCaptain = task.spawn(function()
+    local FinishLine = (game.PlaceId ~= 8206123457) and GetFinishLine() or nil
 
-FinishLine:GetPropertyChangedSignal("CFrame"):Connect(function()
-    if Nocturnal.Automatics.AutoCaptain and FinishLine.Position.Y > 0 then
-        for Index = 1, 7, 1 do
-            task.wait(0.20)
+    while task.wait(0.2) do
+        if not Nocturnal.Automatics.AutoCaptain then continue end
+
+        if not FinishLine or not FinishLine.Parent then
+            FinishLine = GetFinishLine()
+            continue
+        end
+
+        if HumanoidRootPart and FinishLine.Position.Y > 0 then
             HumanoidRootPart.CFrame = FinishLine.CFrame + Vector3.new(0, 2, 0)
         end
     end
@@ -1496,7 +1504,7 @@ LocalPlayer.PlayerGui.ChildAdded:Connect(function(Child)
     end
 end)
 
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+--[[UserInputService.InputBegan:Connect(function(Input, GameProcessed)
 	local Character = LocalPlayer.Character
 	if GameProcessed or (Input.KeyCode ~= Enum.KeyCode.Q) or not Character or not Nocturnal.QBAimbot.Enabled then
 		return
@@ -1588,7 +1596,124 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
 	end
 
 	ThrowFootball(Football, StartPosition, StartPosition + ThrowingDirection * 10000, Power)
-end)
+end)--]]
+
+local Namecall
+Namecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    local Method = getnamecallmethod()
+    local Arguments = { ... }
+
+    if not checkcaller() and (Method == "fireServer") and (Arguments[1] == "Clicked") then
+        local Character = LocalPlayer.Character
+
+        local Football = Character.FindFirstChildOfClass(Character, "Tool")
+        if not Football then return end
+
+        local ThrowType
+
+        local StartPosition = Character.WaitForChild(Character, "Head").Position
+        local ThrowType = GetThrowType(ClosestPlayer)
+
+        if not ClosestPlayer or not ClosestPlayer.IsA(ClosestPlayer, "Player") then
+            return
+        end
+
+        local ReceiverRoute = CalculateRouteOfPlayer(ClosestPlayer)
+        local N = (ReceiverRoute == "Straight") and 4.3 or 5.5
+
+        local Initial = math.clamp(math.round(GetPower(HorizontalRangeOfProjectile(ClosestPlayer), 28)), 0, 95) + N
+        local Angle
+        if ThrowType == "Fade" then
+            Angle = 85
+        elseif ThrowType == "Bullet" then
+            Angle = BulletAngle
+        else
+            Angle = ThrowAngle
+        end
+
+        if Nocturnal.QBAimbot.HighestPowerMode then
+            Initial = math.clamp(GetPower(HorizontalRangeOfProjectile(ClosestPlayer), 28), 85, 95)
+        else
+            if Nocturnal.QBAimbot.AutoPower then
+                Initial = math.clamp(math.round(GetPower(HorizontalRangeOfProjectile(ClosestPlayer), 28)), 0, 95) + N
+            else
+                Initial = NormalPower
+            end
+        end
+
+        if ThrowType == "Bullet" then
+            Initial = 95
+        end
+
+        if ThrowType == "Fade" then
+            Initial = 65
+        end
+
+        local ToLaunchAngle
+        if Nocturnal.QBAimbot.HighestPowerMode then
+            if Nocturnal.QBAimbot.AutoAngle then
+                ToLaunchAngle = CalculateHighSpeedLowAngle(28, Initial)
+            else
+                ToLaunchAngle = math.rad(Angle)
+            end
+        else
+            if Nocturnal.QBAimbot.AutoAngle then
+                if ThrowType == "Fade" then
+                    ToLaunchAngle = math.rad(85)
+                elseif ThrowType == "Bullet" then
+                    ToLaunchAngle = math.clamp(CalculateLaunchAngleBullet(28, Initial), 0, 1)
+                else
+                    ToLaunchAngle = math.clamp(CalculateLaunchAngle(28, Initial), 0, 2.61799388)
+                end
+            else
+                ToLaunchAngle = math.rad(Angle)
+            end
+        end
+
+        local TimeOfFlight = GetTimeOfFlightProjectile(Initial, ToLaunchAngle, 28)
+        local EndPosition
+
+        if IsBot(ClosestPlayer.Name) then
+            EndPosition = BotEstimatedVel(TimeOfFlight, ClosestPlayer)
+        else
+            EndPosition = GetReceiverTargetPosition(TimeOfFlight, ClosestPlayer)
+        end
+
+        local Velocity, DirectionToThrow, Power = VelocityNeededToReachPosition(ToLaunchAngle, StartPosition, EndPosition, Vector3.new(0, -28, 0), TimeOfFlight)
+
+        if AutoPower then
+            if ThrowType == "Fade" then
+                Power = 65
+            elseif ThrowType == "Bullet" then
+                Power = 95
+            end
+        else
+            Power = NormalPower
+        end
+
+        if (game.PlaceId == 8204899140) then
+            local NewArguments = {
+                [1] = "Clicked",
+                [2] = StartPosition,
+                [3] = StartPosition + ThrowingDirection * 10000,
+                [4] = 1,
+                [5] = Power
+            }
+
+            return Namecall(self, unpack(NewArguments))
+        else
+            local NewArguments = {
+                [1] = "Clicked",
+                [2] = StartPosition,
+                [3] = StartPosition + ThrowingDirection * 10000,
+                [4] = Power
+            }
+
+            return Namecall(self, unpack(NewArguments))
+        end
+    end
+    return Namecall(self, ...)
+end))
 
 RunService.Heartbeat:Connect(function()
     if Nocturnal.QBAimbot.Enabled then
@@ -1683,7 +1808,7 @@ RunService.Heartbeat:Connect(function()
                 CreateBillboard("Power: " .. tostring(Power), StartPosition)
                 CreateBillboard("Angle: " .. tostring(math.deg(LaunchAngle)), StartPosition + Vector3.new(0, 2, 0))
                 CreateBillboard("Target", TargetPosition)
-                -- >CreateBillboard("ThrowType: " .. ThrowType, StartPosition + Vector3.new(0, 4, 0))
+                -- > CreateBillboard("ThrowType: " .. ThrowType, StartPosition + Vector3.new(0, 4, 0))
             end
         end
     end
