@@ -202,113 +202,96 @@ local Threads = {}
 local Hooks = {}
 local HandshakeIntegers = {}
 
--- // AC Bypass
+-- // AC Bypass (not my bypass, this is my friends bypass temporarily until I get on tommorrow)
 if game.PlaceId == 8204899140 then
-    -- // Services
-    local Players = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-    -- // Variables
-    local Player = Players.LocalPlayer or Players.PlayerAdded:Wait()
-
-    -- // Instances
-    local RemotesFolder   = ReplicatedStorage:WaitForChild("Remotes")
-    local HandshakeRemote = RemotesFolder:WaitForChild("CharacterSoundEvent")
-
-    -- // Utilities
-    local AnticheatString
-    local HandshakeTable
-
-    local Whitelisted = {
-        {668, 670, 671, 751, 791, 976},
-        {686, 788, 880, 811, 785, 787},
-        {764, 699, 671, 751, 774, 978}
-    }
-
-    -- // Functions
-    local function TableEquality(x, y)
-        if rawlen(x) ~= rawlen(y) then
-            return false
-        end
-
-        for Index = 1, rawlen(x) do
-            if rawget(x, Index) ~= rawget(y, Index) then
-                return false
-            end
-        end
-
-        return true
-    end
-
-    -- // Metatable Hook
-    local MT = getrawmetatable(game)
-    setreadonly(MT, false)
-
-    local OldNamecall = MT.__namecall
-
-    MT.__namecall = newcclosure(function(self, ...)
-        local Method = getnamecallmethod()
-        local Args   = { ... }
-
-        if not checkcaller()
-            and self == HandshakeRemote
-            and (Method == "FireServer" or Method == "fireServer")
-            and rawequal(type(Args[2]), "table")
-            and rawlen(Args[2]) == 19
-        then
-            local Metatable = getrawmetatable(Args[2])
-            if Metatable and rawget(Metatable, "__tostring") then
-                rawset(Metatable, "__tostring", nil)
-            end 
-
-            AnticheatString = Args[1]
-            HandshakeTable  = Args[2]
-        end
-
-        return OldNamecall(self, ...)
-    end)
-
-    -- // Disable functions in PlayerModule.LocalScript
-    for _, fn in pairs(getgc(true)) do
-        if type(fn) == "function" then
-            local FNInfo = debug.info(fn, "s")
-            if FNInfo and FNInfo:find("PlayerModule.LocalScript") then
-                local Constants = getconstants(fn)
-
-                if table.find(Constants, 4000002) then
-                    hookfunction(fn, function(...)
-
-                    end)
-                end
-            end
-        elseif type(fn) == "table" and rawlen(fn) == 19 and type(rawget(fn, 19)) == "userdata" then
-            local Metatable = getrawmetatable(fn)
-
-            if Metatable and rawget(Metatable, "__call") then
-                local __call
-                __call = hookfunction(rawget(Metatable, "__call"), newcclosure(function(self, ...)
-                    local Arguments = { ... }
-                    if not (
-                        TableEquality(Whitelisted[1], Arguments) or
-                        TableEquality(Whitelisted[2], Arguments) or
-                        TableEquality(Whitelisted[3], Arguments)
-                    ) then
-                        return
-                    end
-                    return __call(self, ...)
-                end))
-            end
-        end
-    end
-
-    -- // Replicate handshake
-    HandshakeRemote.OnClientEvent:Connect(function(...)
-        local Arguments = { ... }
-        if Arguments[1] == AnticheatString and HandshakeTable then
-            print("Replicated handshake.")
-            HandshakeRemote:FireServer(AnticheatString, HandshakeTable, nil)
-        end
-    end)
+	local runService = game:GetService("RunService")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Handshake = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CharacterSoundEvent")
+	
+	local Whitelisted = {
+	    {668, 670, 671, 751, 791, 976},
+	    {686, 788, 880, 811, 785, 787},
+	    {764, 699, 671, 751, 774, 978}
+	}
+	
+	local function TableEquality(x, y)
+	    if #x ~= #y then return false end
+	    for i = 1, #x do
+	        if x[i] ~= y[i] then return false end
+	    end
+	    return true
+	end
+	
+	for _, v in next, getgc(true) do
+	    if type(v) == "table" and rawlen(v) == 19 and type(rawget(v, 19)) == "userdata" then
+	        for i = 2, 18 do
+	            v[i] = math.random(1e6, 1e8)
+	        end
+	    end
+	end
+	
+	for _, v in next, getgc(true) do
+	    if type(v) == "function" then
+	        local ok, constants = pcall(debug.getconstants, v)
+	        if ok and constants then
+	            for i, c in pairs(constants) do
+	                if c == 99.2 or c == 0.334 then
+	                    constants[i] = nil
+	                end
+	            end
+	        end
+	    end
+	end
+	
+	Hooks.debug = hookfunction(debug.info, function(Level, Stuff)
+	    if Level == 2 and (Stuff == "sn" or Stuff == "f") then
+	        return "LocalScript"
+	    end
+	    return Hooks.debug(Level, Stuff)
+	end)
+	
+	for _, v in getgc() do
+	    if typeof(v) == "function" and islclosure(v) then
+	        local protos = getprotos(v)
+	        if #protos == 1 then
+	            local constants = getconstants(protos[1])
+	            if table.find(constants, 4000002) then
+	                hookfunction(v, function()
+	                    return 
+	                end)
+	            end
+	        end
+	    end
+	end
+	
+	for _, v in next, getgc(true) do
+	    if type(v) == "table" and rawlen(v) == 19 and type(rawget(v, 19)) == "userdata" then
+	        local mt = getrawmetatable(v)
+	        if mt and mt.__call then
+	            Hooks.__call = hookfunction(mt.__call, function(self, ...)
+	                local Args = {...}
+	                if not (TableEquality(Whitelisted[1], Args) or 
+	                    TableEquality(Whitelisted[2], Args) or 
+	                    TableEquality(Whitelisted[3], Args)) then
+	                    return
+	                end
+	                return Hooks.__call(self, ...)
+	            end)
+	        end
+	    end
+	end
+	
+	runService.RenderStepped:Connect(function()
+	    if Handshake and #Whitelisted == 3 then
+	        for i = 1, #Whitelisted do
+	            local arg1 = "\240\159\146\177\226\154\149\239\184\143"
+	            local arg2 = Whitelisted[i]
+	            local arg3 = nil
+	            Handshake:FireServer(arg1, arg2, arg3)
+	            task.wait(0.5)
+	        end
+	    end
+	end)
 end
 
 task.wait()
