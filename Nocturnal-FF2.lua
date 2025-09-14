@@ -269,8 +269,6 @@ if game.PlaceId == 8204899140 then
     end)
 
     -- // Disable functions in PlayerModule.LocalScript
-    task.wait()
-
     for _, fn in pairs(getgc(true)) do
         if type(fn) == "function" then
             local FNInfo = debug.info(fn, "s")
