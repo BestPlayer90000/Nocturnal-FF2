@@ -728,46 +728,38 @@ local function IsBotMoving(BotSpeed)
 	return BotSpeed ~= Vector3.new(0, 0, 0)
 end
 
-local function GetThrowType(ClosestPlay)
-    local RP = HorizontalRangeOfProjectile(ClosestPlay)
-    local r = CalculateRouteOfPlayer(ClosestPlay)
-    local calculatedThrowType = ""
-    if ClosestPlay.Name == "bot 1" or ClosestPlay.Name == "bot 3" then
-        calculatedThrowType = "Dime"
-        -- //.Text =  calculatedThrowType
+local function GetThrowType(ClosestPlayer)
+    local HorizontalProjectileRange = HorizontalRangeOfProjectile(ClosestPlayer)
+    local PlayerRoute = CalculateRouteOfPlayer(ClosestPlayer)
+    local CalculatedThrowType = ""
+
+    if ClosestPlayer.Name == "bot 1" or ClosestPlayer.Name == "bot 3" then
+        CalculatedThrowType = "Dime"
     else
-        if RP <= 100 and r == "Slant" then
-            calculatedThrowType = "Bullet"
-            -- //.Text =  calculatedThrowType
-        elseif RP > 100 and r == "Slant" then
-            calculatedThrowType = "Dive"
-            -- //.Text =  calculatedThrowType
-        elseif RP <= 150 and r == "Straight" then
-            calculatedThrowType = "Dive"
-            -- //.Text =  calculatedThrowType
-        elseif RP > 150 and r == "Straight" then
-            calculatedThrowType = "Dime"
-            -- //.Text =  calculatedThrowType
-        elseif RP <= 150 and r == "Post" then
-            calculatedThrowType = "Dive"
-            -- //.Text =  calculatedThrowType
-        elseif RP > 150 and r == "Post" then
-            calculatedThrowType = "Dime"
-            -- //.Text =  calculatedThrowType
-        elseif RP <= 100 and r == "Still" then
-            calculatedThrowType = "Dot"
-            -- //.Text =  calculatedThrowType
-        elseif RP > 100 and r == "Still" then
-            calculatedThrowType = "Dime"
-            -- //.Text =  calculatedThrowType
-        elseif RP <= 150 and r == "Comeback" then
-            calculatedThrowType = "Dime"
-            -- //.Text =  calculatedThrowType
-        elseif RP > 150 and r == "Comeback" then
-            calculatedThrowType = "Dive"
-            -- //.Text =  calculatedThrowType
+        if HorizontalProjectileRange <= 100 and PlayerRoute == "Slant" then
+            CalculatedThrowType = "Bullet"
+        elseif HorizontalProjectileRange > 100 and PlayerRoute == "Slant" then
+            CalculatedThrowType = "Dive"
+        elseif HorizontalProjectileRange <= 150 and PlayerRoute == "Straight" then
+            CalculatedThrowType = "Dive"
+        elseif HorizontalProjectileRange > 150 and PlayerRoute == "Straight" then
+            CalculatedThrowType = "Dime"
+        elseif HorizontalProjectileRange <= 150 and PlayerRoute == "Post" then
+            CalculatedThrowType = "Dive"
+        elseif HorizontalProjectileRange > 150 and PlayerRoute == "Post" then
+            CalculatedThrowType = "Dime"
+        elseif HorizontalProjectileRange <= 100 and PlayerRoute == "Still" then
+            CalculatedThrowType = "Dot"
+        elseif HorizontalProjectileRange > 100 and PlayerRoute == "Still" then
+            CalculatedThrowType = "Dime"
+        elseif HorizontalProjectileRange <= 150 and PlayerRoute == "Comeback" then
+            CalculatedThrowType = "Dime"
+        elseif HorizontalProjectileRange > 150 and PlayerRoute == "Comeback" then
+            CalculatedThrowType = "Dive"
         end
     end
+
+    return CalculatedThrowType
 end
 
 local ThrowTypeOffsets = {
