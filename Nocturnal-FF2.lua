@@ -353,41 +353,8 @@ local function GetFieldOrientationX(PlayerPosition)
 	return (PlayerPosition.X > 0) and 1 or -1
 end
 
-local function GetPower(Range, Gravity)
-	return math.sqrt(Range * Gravity)
-end
-
-local function beamProjectile(g, v0, x0, t1)
-    local c = 0.5 * 0.5 * 0.5
-    local p3 = 0.5 * g * t1 * t1 + v0 * t1 + x0
-    local p2 = p3 - (g * t1 * t1 + v0 * t1) / 3
-    local p1 = (c * g * t1 * t1 + 0.5 * v0 * t1 + x0 - c * (x0 + p3)) / (3 * c) - p2
-
-    local curve0 = (p1 - x0).magnitude
-    local curve1 = (p2 - p3).magnitude
-
-    local b = (x0 - p3).unit
-    local r1 = (p1 - x0).unit
-    local u1 = r1:Cross(b).unit
-    local r2 = (p2 - p3).unit
-    local u2 = r2:Cross(b).unit
-    b = u1:Cross(r1).unit
-
-    local cf1 = CFrame.new(
-        x0.x, x0.y, x0.z,
-        r1.x, u1.x, b.x,
-        r1.y, u1.y, b.y,
-        r1.z, u1.z, b.z
-    )
-
-    local cf2 = CFrame.new(
-        p3.x, p3.y, p3.z,
-        r2.x, u2.x, b.x,
-        r2.y, u2.y, b.y,
-        r2.z, u2.z, b.z
-    )
-
-    return curve0, -curve1, cf1, cf2
+local function GetPower(TargetRange, GravityForce)
+    return math.sqrt(TargetRange * GravityForce)
 end
 
 function CreateBeamFromCFrames(cf1, cf2, curve0, curve1, color)
@@ -466,37 +433,37 @@ local function CreateBillboard(text, position)
 	return part
 end
 
-local function BeamProjectile(g, v0, x0, t1)
-	local c = 0.5 * 0.5 * 0.5
-	local p3 = 0.5 * g * t1 * t1 + v0 * t1 + x0
-	local p2 = p3 - (g * t1 * t1 + v0 * t1) / 3
-	local p1 = (c * g * t1 * t1 + 0.5 * v0 * t1 + x0 - c * (x0 + p3)) / (3 * c) - p2
+local function BeamProjectile(Gravity, InitialVelocity, InitialPosition, TimeStep)
+    local CurveConstant = 0.5 * 0.5 * 0.5
+    local PositionEnd = 0.5 * Gravity * TimeStep * TimeStep + InitialVelocity * TimeStep + InitialPosition
+    local PositionMid = PositionEnd - (Gravity * TimeStep * TimeStep + InitialVelocity * TimeStep) / 3
+    local PositionControl = (CurveConstant * Gravity * TimeStep * TimeStep + 0.5 * InitialVelocity * TimeStep + InitialPosition - CurveConstant * (InitialPosition + PositionEnd)) / (3 * CurveConstant) - PositionMid
 
-	local curve0 = (p1 - x0).Magnitude
-	local curve1 = (p2 - p3).Magnitude
+    local CurveMagnitudeStart = (PositionControl - InitialPosition).Magnitude
+    local CurveMagnitudeEnd = (PositionMid - PositionEnd).Magnitude
 
-	local b = (x0 - p3).Unit
-	local r1 = (p1 - x0).Unit
-	local u1 = r1:Cross(b).Unit
-	local r2 = (p2 - p3).Unit
-	local u2 = r2:Cross(b).Unit
-	b = u1:Cross(r1).Unit
+    local BaseDirection = (InitialPosition - PositionEnd).Unit
+    local RouteDirectionStart = (PositionControl - InitialPosition).Unit
+    local UpVectorStart = RouteDirectionStart:Cross(BaseDirection).Unit
+    local RouteDirectionEnd = (PositionMid - PositionEnd).Unit
+    local UpVectorEnd = RouteDirectionEnd:Cross(BaseDirection).Unit
+    BaseDirection = UpVectorStart:Cross(RouteDirectionStart).Unit
 
-	local cf1 = CFrame.new(
-		x0.X, x0.Y, x0.Z,
-		r1.X, u1.X, b.X,
-		r1.Y, u1.Y, b.Y,
-		r1.Z, u1.Z, b.Z
-	)
+    local CoordinateFrameStart = CFrame.new(
+        InitialPosition.X, InitialPosition.Y, InitialPosition.Z,
+        RouteDirectionStart.X, UpVectorStart.X, BaseDirection.X,
+        RouteDirectionStart.Y, UpVectorStart.Y, BaseDirection.Y,
+        RouteDirectionStart.Z, UpVectorStart.Z, BaseDirection.Z
+    )
 
-	local cf2 = CFrame.new(
-		p3.X, p3.Y, p3.Z,
-		r2.X, u2.X, b.X,
-		r2.Y, u2.Y, b.Y,
-		r2.Z, u2.Z, b.Z
-	)
+    local CoordinateFrameEnd = CFrame.new(
+        PositionEnd.X, PositionEnd.Y, PositionEnd.Z,
+        RouteDirectionEnd.X, UpVectorEnd.X, BaseDirection.X,
+        RouteDirectionEnd.Y, UpVectorEnd.Y, BaseDirection.Y,
+        RouteDirectionEnd.Z, UpVectorEnd.Z, BaseDirection.Z
+    )
 
-	return curve0, -curve1, cf1, cf2
+    return CurveMagnitudeStart, -CurveMagnitudeEnd, CoordinateFrameStart, CoordinateFrameEnd
 end
 
 local function GetClosestPlayerToMouse()
